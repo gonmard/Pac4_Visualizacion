@@ -1,0 +1,125 @@
+---
+---
+  Title: 'Análisis de los acuerdos de Paz e implicaciones con las personas para Europe and Eurasia'
+PAC:'A5: 'Projecte de visualitzación de dates (PAC4)'
+Author: "DIEGO GONZALEZ MARTINEZ"
+Date: 31/05/2020
+output:
+  word_document:
+    toc: yes
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include=FALSE}
+#Cargamos la librer?as necesarias para el preprocesado de los datos
+library(knitr)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(Hmisc)
+library(chron)
+library(VIM)
+library(hms)
+library(kableExtra)
+library(latexpdf)
+library(qcc)
+library(stringr)
+library(plotrix)
+library(readxl)
+library(xlsx)
+```
+
+
+Los datos que procedemos a analizar proceden de la web https://www.peaceagreements.org/, se ha realizado un filtro para obtener un dataset con los conflictos/acuerdos de paz para la regi?n de Europa y EurAsia obteniendo dos datasets en formato .csv ambos contiene 410 conflictos/acuerdos de paz pero con n?mero distinto de variables, que seguidamente procedemos a analizar.
+
+Para el an?lisis de los datos realizaremos un peque?o proyecto de R atrav?s de Rstudio y la herramienta Markdown que nos proporcionar? un documento word/pdf que finalmente ser? el que presentaremos como PAC. Posteriormente realizaremos un Dashboard a trav?s de Tableau Public que indicaremos al final de este documento.
+
+```{r}
+# Cargamos los datos de población por país
+#Leemos el fichero pax_data_410_agreements.csv y pax_corpus_410_agreements,  lo cargamos en dos datafrmae, datos y datoscp
+setwd("D:/Documentos/UOC/Master/3_Visualizacion/PAC4/Datos")
+
+datos<-(read_excel("Poblacion_paises.xlsx"))
+#Creamos un dataframe con los datos obtenidos
+datos<-data.frame(datos)
+col<-c(colnames(datos))
+col<-gsub("X", "", col)
+names (datos) = col
+
+# Cargamos los datos de conflictos
+#Leemos el fichero pax_data_410_agreements.csv y pax_corpus_410_agreements,  lo cargamos en dos datafrmae, datos y datoscp
+dt_Cft<-(read_excel("ged192.xlsx"))
+#Creamos un dataframe con los datos obtenidos
+dt_Cft<-data.frame(dt_Cft)
+
+
+# Cargamos los datos de acuerdos
+#Leemos el fichero pax_data_410_agreements.csv y pax_corpus_410_agreements,  lo cargamos en dos datafrmae, datos y datoscp
+dt_agt<-(read_excel("pax_data_410_agreements_processed.xlsx"))
+#Creamos un dataframe con los datos obtenidos
+dt_agt<-data.frame(dt_agt)
+
+```
+
+```{r}
+
+dtf<-data.frame("Country Name"= character(), "Country Code" = character(), "Year" = character(), "Population"= integer())
+
+for (i in 1:nrow(datos)) {
+  for(j in 3:ncol(datos)){
+     coll<-colnames(datos[j])
+     namCtr=datos[i, 1]
+     cod=datos[i, 2]
+     yr=coll
+     pp=as.integer(datos[i, j])
+     if (is.na(pp))
+       pp=0
+     newdata=data.frame("Country Name"= namCtr, "Country Code"= cod, "Year"=yr, "Population"=pp)
+     dtf=rbind(dtf, newdata)
+  }
+}
+write.xlsx (dtf, file= "../Pac4/Datos/Poblacion_paises_años.xlsx", sheetName = "Poblacion_pais")
+
+```
+
+
+
+```{r}
+dtpax<-select(dt_agt, UcdpCon, Loc1ISO)
+dtpax<-unique(dtpax)
+
+by_conflict_id <- dt_Cft %>% group_by(conflict_new_id, year)
+
+total_conf_id <-summarise (by_conflict_id, 
+                           deaths_a = sum(deaths_a), 
+                           deaths_B = sum(deaths_b), 
+                           deaths_civilians= sum(deaths_civilians), 
+                           deaths_unknown= sum(deaths_unknown), 
+                           total_death= sum(deaths_a,deaths_b,deaths_civilians,deaths_unknown)
+                           )
+dfd<-merge(x=dtpax,y=total_conf_id, by.x="UcdpCon", by.y= "conflict_new_id", all.x=TRUE)
+write.xlsx (dfd, file= "../Pac4/Datos/Victimas_conflictos.xlsx", sheetName = "Victimas")
+
+```
+
+```{r}
+
+year<-unique(dfd$year)
+write.xlsx (year, file= "../Pac4/Datos/Date.xlsx", sheetName = "Año")
+
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
